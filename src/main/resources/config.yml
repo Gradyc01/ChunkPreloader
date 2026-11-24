@@ -1,0 +1,70 @@
+# All AREA sizes are in CHUNKS (1 chunk = 16x16 blocks).
+# Each area spans chunks [start, start + size) on both axes.
+# All SCAN values are in BLOCKS.
+#
+# /start-load                -> overworld only
+# /start-load all            -> overworld, nether, end (in that order)
+# /start-load world|nether|end
+# /start-load <dim> <sizeX> <sizeZ>   (size override, single dimension only)
+
+dimensions:
+  overworld:
+    world: world
+    area:
+      start-chunk-x: -64
+      start-chunk-z: -64
+      size-x: 128
+      size-z: 128
+    scan:
+      center-x: 0
+      center-z: 0
+      radius: 1024      # square: center +/- radius
+  nether:
+    world: the_nether
+    area:               # nether is 1:8, so 16x16 chunks here ~ 128x128 overworld chunks
+      start-chunk-x: -8
+      start-chunk-z: -8
+      size-x: 16
+      size-z: 16
+    scan:
+      center-x: 0
+      center-z: 0
+      radius: 128
+  end:
+    world: the_end
+    area:
+      start-chunk-x: -32
+      start-chunk-z: -32
+      size-x: 64
+      size-z: 64
+    scan:
+      center-x: 0
+      center-z: 0
+      radius: 512
+
+# Biome + structure tracking while chunks load
+scan:
+  enabled: true
+  output-file: scan-results.json   # inside plugins/ChunkPreloader/
+  # Vertical sampling step for biomes. 4 = every biome cell (finds cave biomes, slowest).
+  # Raise to 8/16 to speed up scanning at the risk of missing thin cave biomes.
+  biome-y-step: 4
+
+# Generate chunks that don't exist yet (false = only load already-generated chunks)
+generate: true
+
+speed:
+  # Max chunk loads in flight at once. THE main speed knob.
+  # Higher = faster, but more RAM/CPU. Start around 16-64.
+  max-concurrent: 32
+  # Max new chunk requests submitted per run of the scheduler
+  chunks-per-tick: 8
+  # Scheduler runs every N ticks (1 = every tick, 20 = once a second)
+  tick-interval: 1
+
+# Refuse to start while players are online
+require-no-players: true
+# Shut the server down once every requested dimension has finished
+shutdown-when-done: true
+# Print progress every N seconds
+progress-interval-seconds: 10

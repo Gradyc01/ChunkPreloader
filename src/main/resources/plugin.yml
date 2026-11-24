@@ -1,0 +1,21 @@
+name: ChunkPreloader
+version: '${version}'
+main: dev.example.chunkpreloader.ChunkPreloaderPlugin
+api-version: '26.3'
+description: Loads/generates every chunk in an area (overworld/nether/end), records biomes and structures, then shuts the server down.
+commands:
+  start-load:
+    description: Preload dimensions (default overworld) and record biomes/structures
+    usage: /start-load [all|world|nether|end] [sizeX sizeZ]
+    permission: chunkpreloader.use
+  stop-load:
+    description: Abort the running chunk load (does not shut down)
+    usage: /stop-load
+    permission: chunkpreloader.use
+  load-speed:
+    description: View or change the load speed live
+    usage: /load-speed [concurrent|per-tick|interval] [value]
+    permission: chunkpreloader.use
+permissions:
+  chunkpreloader.use:
+    default: op

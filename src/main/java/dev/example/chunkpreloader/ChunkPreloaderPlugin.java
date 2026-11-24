@@ -25,6 +25,7 @@ public final class ChunkPreloaderPlugin extends JavaPlugin {
     private LoadJob job;
     private Plan currentPlan;
     private AreaScanner currentScanner;
+    private MapCacheBuilder currentMapCache;
     private boolean sessionActive;
 
     // Settings captured when /start-load runs
@@ -34,6 +35,8 @@ public final class ChunkPreloaderPlugin extends JavaPlugin {
     private boolean scanEnabled;
     private int scanYStep;
     private String outputFile;
+    private boolean mapCacheEnabled;
+    private String mapCacheDir;
 
     @Override
     public void onEnable() {
@@ -135,6 +138,8 @@ public final class ChunkPreloaderPlugin extends JavaPlugin {
         scanEnabled = cfg.getBoolean("scan.enabled", true);
         scanYStep = cfg.getInt("scan.biome-y-step", 4);
         outputFile = cfg.getString("scan.output-file", "scan-results.json");
+        mapCacheEnabled = cfg.getBoolean("map-cache.enabled", true);
+        mapCacheDir = cfg.getString("map-cache.output-dir", "map-cache");
         speed.maxConcurrent = Math.max(1, cfg.getInt("speed.max-concurrent", 32));
         speed.chunksPerTick = Math.max(1, cfg.getInt("speed.chunks-per-tick", 8));
         speed.tickInterval = Math.max(1, cfg.getInt("speed.tick-interval", 1));
@@ -163,14 +168,32 @@ public final class ChunkPreloaderPlugin extends JavaPlugin {
         currentScanner = scanEnabled
                 ? new AreaScanner(p.world(), p.scanCenterX(), p.scanCenterZ(), p.scanRadius(), scanYStep)
                 : null;
+        currentMapCache = null;
+        if (mapCacheEnabled && p.dimension() == Dimension.OVERWORLD) {
+            if (MapCacheBuilder.fits(p.scanRadius())) {
+                currentMapCache = new MapCacheBuilder(p.world(), p.scanCenterX(), p.scanCenterZ(), p.scanRadius());
+            } else {
+                getLogger().warning("map-cache skipped: scan radius " + p.scanRadius() + " is too large.");
+            }
+        }
         getLogger().info("Starting " + p.dimension().key + " ('" + p.world().getName() + "')");
-        job = new LoadJob(this, p, currentScanner, speed, generate, progressSeconds, this::onJobDone);
+        job = new LoadJob(this, p, currentScanner, currentMapCache, speed, generate, progressSeconds, this::onJobDone);
         job.start();
     }
 
     private void onJobDone() {
         currentPlan.world().save();
         writeScan(currentPlan, currentScanner, true);
+        if (currentMapCache != null) {
+            try {
+                getLogger().info("Rendering map cache (5 scales)...");
+                currentMapCache.write(getDataFolder().toPath().resolve(mapCacheDir));
+                getLogger().info("Wrote map cache to plugins/ChunkPreloader/" + mapCacheDir);
+            } catch (IOException e) {
+                getLogger().severe("Could not write map cache: " + e);
+            }
+            currentMapCache = null; // free the arrays
+        }
         startNext();
     }
 
@@ -196,6 +219,7 @@ public final class ChunkPreloaderPlugin extends JavaPlugin {
         queue.clear();
         sessionActive = false;
         writeScan(currentPlan, currentScanner, false); // partial results, "complete": false
+        currentMapCache = null; // an aborted run does not write a (partial) map cache
         sender.sendMessage("Load aborted. Server will NOT shut down automatically.");
     }
 

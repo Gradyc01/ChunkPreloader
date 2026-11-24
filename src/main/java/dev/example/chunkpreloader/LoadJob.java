@@ -19,6 +19,7 @@ final class LoadJob {
     private final Plan plan;
     private final World world;
     private final AreaScanner scanner; // may be null
+    private final MapCacheBuilder mapCache; // may be null
     private final Speed speed;
     private final boolean generate;
     private final int progressSeconds;
@@ -36,12 +37,13 @@ final class LoadJob {
     private volatile boolean running;
     private long startNanos, lastLogNanos;
 
-    LoadJob(ChunkPreloaderPlugin plugin, Plan plan, AreaScanner scanner, Speed speed,
+    LoadJob(ChunkPreloaderPlugin plugin, Plan plan, AreaScanner scanner, MapCacheBuilder mapCache, Speed speed,
             boolean generate, int progressSeconds, Runnable onDone) {
         this.plugin = plugin;
         this.plan = plan;
         this.world = plan.world();
         this.scanner = scanner;
+        this.mapCache = mapCache;
         this.speed = speed;
         this.generate = generate;
         this.progressSeconds = progressSeconds;
@@ -85,14 +87,15 @@ final class LoadJob {
                     if (ex != null) {
                         failed.incrementAndGet();
                         plugin.getLogger().warning("Failed chunk " + cx + "," + cz + ": " + ex);
-                    } else if (chunk != null && scanner != null) {
+                    } else if (chunk != null) {
                         try {
-                            scanner.scanChunk(cx, cz);
+                            if (scanner != null) scanner.scanChunk(cx, cz);
+                            if (mapCache != null) mapCache.addChunk(chunk);
                         } catch (Throwable t) {
                             if (!scanErrorLogged) {
                                 scanErrorLogged = true;
-                                plugin.getLogger().warning("Scan failed at chunk " + cx + "," + cz
-                                        + " (further scan errors hidden): " + t);
+                                plugin.getLogger().warning("Scan/map capture failed at chunk " + cx + "," + cz
+                                        + " (further errors hidden): " + t);
                             }
                         }
                     }

@@ -20,7 +20,7 @@ dimensions:
       center-z: 0
       radius: 1024      # square: center +/- radius
   nether:
-    world: the_nether
+    world: world_nether
     area:               # nether is 1:8, so 16x16 chunks here ~ 128x128 overworld chunks
       start-chunk-x: -8
       start-chunk-z: -8
@@ -31,7 +31,7 @@ dimensions:
       center-z: 0
       radius: 128
   end:
-    world: the_end
+    world: world_the_end
     area:
       start-chunk-x: -32
       start-chunk-z: -32
@@ -49,6 +49,13 @@ scan:
   # Vertical sampling step for biomes. 4 = every biome cell (finds cave biomes, slowest).
   # Raise to 8/16 to speed up scanning at the risk of missing thin cave biomes.
   biome-y-step: 4
+
+# Pre-rendered minimap data (OVERWORLD ONLY). Uses the overworld scan square
+# (center +/- radius). Writes one file per vanilla map scale into plugins/ChunkPreloader/<output-dir>/.
+# Make sure the overworld 'area' covers the whole scan square or the edge pixels stay transparent.
+map-cache:
+  enabled: true
+  output-dir: map-cache
 
 # Generate chunks that don't exist yet (false = only load already-generated chunks)
 generate: true
